@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>통합관제시스템 (FMS) 테스트베드</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f7ff',
+                            100: '#e0effe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            900: '#1e3a8a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+        .grid-bg {
+            background-size: 20px 20px;
+            background-image: linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+        }
+        .dark .grid-bg {
+            background-image: linear-gradient(to right, rgba(51, 65, 85, 0.2) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(51, 65, 85, 0.2) 1px, transparent 1px);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
+
+    <!-- 상단 내비게이션 바 -->
+    <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-brand-500 text-white rounded-lg shadow-md shadow-brand-500/20">
+                        <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
+                    </div>
+                    <div>
+                        <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">FMS 통합관제시스템</span>
+                        <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 animate-pulse-soft">로컬 시뮬레이터 구동중</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-4">
+                    <!-- 시스템 시간 표시 -->
+                    <div class="hidden md:flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 font-mono">
+                        <i data-lucide="clock" class="w-4 h-4"></i>
+                        <span id="system-time">00:00:00</span>
+                    </div>
+                    <!-- 테마 토글 버튼 -->
+                    <button id="theme-toggle" class="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors">
+                        <i data-lucide="sun" class="w-5 h-5 hidden dark:block"></i>
+                        <i data-lucide="moon" class="w-5 h-5 block dark:hidden"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 메인 레이아웃 -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        
+        <!-- 1. 상단 종합 현황판 (요약 카드) -->
+        <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+            <!-- AGV 요약 -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                <div class="space-y-1">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">AGV 운행 현황</p>
+                    <h3 class="text-2xl font-bold font-mono text-blue-600 dark:text-blue-400" id="stat-agv">2 / 3 대</h3>
+                </div>
+                <div class="p-3 bg-blue-50 dark:bg-blue-950/40 text-blue-500 rounded-lg">
+                    <i data-lucide="truck" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- AMR 요약 -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                <div class="space-y-1">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">AMR 운행 현황</p>
+                    <h3 class="text-2xl font-bold font-mono text-purple-600 dark:text-purple-400" id="stat-amr">2 / 2 대</h3>
+                </div>
+                <div class="p-3 bg-purple-50 dark:bg-purple-950/40 text-purple-500 rounded-lg">
+                    <i data-lucide="navigation" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- ABCS 요약 -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                <div class="space-y-1">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">ABCS 가동 현황</p>
+                    <h3 class="text-2xl font-bold font-mono text-amber-600 dark:text-amber-400" id="stat-abcs">1 / 2 개소</h3>
+                </div>
+                <div class="p-3 bg-amber-50 dark:bg-amber-950/40 text-amber-500 rounded-lg">
+                    <i data-lucide="battery-charging" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            <!-- 전체 경보 상태 -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+                <div class="space-y-1">
+                    <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">시스템 오류/경보</p>
+                    <h3 class="text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400" id="stat-alert">정상 (0)</h3>
+                </div>
+                <div class="p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-lg" id="alert-icon-box">
+                    <i data-lucide="shield-check" class="w-6 h-6" id="alert-icon"></i>
+                </div>
+            </div>
+        </section>
+
+        <!-- 2. 관제 레이아웃: 맵 시뮬레이터 & 실시간 제어 패널 -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- 왼쪽/중앙: 2D 시각화 모니터링 맵 -->
+            <div class="lg:col-span-2 flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
+                    <div>
+                        <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                            <i data-lucide="map" class="w-5 h-5 text-brand-500"></i> 실시간 관제 모니터 (2D 맵)
+                        </h2>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">장비들의 실시간 실내 격자 위치 매핑 시뮬레이터</p>
+                    </div>
+                    <span class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full flex items-center gap-1">
+                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span> Live Feedback
+                    </span>
+                </div>
+                
+                <!-- 맵 영역 -->
+                <div class="p-6 flex-1 flex items-center justify-center min-h-[400px] grid-bg relative">
+                    <div class="w-full max-w-[600px] aspect-square border border-dashed border-slate-300 dark:border-slate-700 rounded-xl relative overflow-hidden bg-slate-50/30 dark:bg-slate-900/30" id="map-container">
+                        <!-- 격자 가이드 라인 -->
+                        <div class="absolute inset-0 grid grid-cols-5 grid-rows-5 pointer-events-none">
+                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
+                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
+                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
+                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
+                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
+                        </div>
+
+                        <!-- 고정 충전 스테이션 표기 (ABCS) -->
+                        <div id="abcs-ch1" class="absolute transition-all duration-500 p-2 rounded-lg flex flex-col items-center justify-center text-[10px] font-bold" style="left: 10%; top: 80%;">
+                            <i data-lucide="battery-charging" class="w-5 h-5 text-amber-500"></i>
+                            <span class="text-slate-700 dark:text-slate-300 font-mono mt-0.5">ABCS-01</span>
+                            <span class="px-1 text-[8px] rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">사용가능</span>
+                        </div>
+
+                        <div id="abcs-ch2" class="absolute transition-all duration-500 p-2 rounded-lg flex flex-col items-center justify-center text-[10px] font-bold" style="left: 80%; top: 10%;">
+                            <i data-lucide="battery-charging" class="w-5 h-5 text-amber-500"></i>
+                            <span class="text-slate-700 dark:text-slate-300 font-mono mt-0.5">ABCS-02</span>
+                            <span id="abcs-02-badge" class="px-1 text-[8px] rounded bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">충전중 (AGV-01)</span>
+                        </div>
+
+                        <!-- 실시간 움직이는 장비 노드들 -->
+                        <div id="map-agv-01" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                            <div class="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
+                                <i data-lucide="truck" class="w-5 h-5"></i>
+                            </div>
+                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow">AGV-01</span>
+                        </div>
+
+                        <div id="map-agv-02" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                            <div class="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
+                                <i data-lucide="truck" class="w-5 h-5"></i>
+                            </div>
+                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow">AGV-02</span>
+                        </div>
+
+                        <div id="map-agv-03" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                            <div id="agv-03-body" class="w-9 h-9 rounded-full bg-slate-400 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
+                                <i data-lucide="truck" class="w-5 h-5"></i>
+                            </div>
+                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-slate-600 text-white rounded shadow" id="agv-03-label">AGV-03</span>
+                        </div>
+
+                        <div id="map-amr-01" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                            <div class="w-9 h-9 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
+                                <i data-lucide="navigation" class="w-5 h-5"></i>
+                            </div>
+                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-purple-600 text-white rounded shadow">AMR-01</span>
+                        </div>
+
+                        <div id="map-amr-02" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
+                            <div class="w-9 h-9 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
+                                <i data-lucide="navigation" class="w-5 h-5"></i>
+                            </div>
+                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-purple-600 text-white rounded shadow">AMR-02</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 실시간 장비 목록 & 개별 제어판 -->
+            <div class="space-y-6">
+                
+                <!-- 수동 강제 중단 및 복구 마스터 제어 -->
+                <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
+                    <h3 class="font-bold text-slate-900 dark:text-white mb-3 text-sm flex items-center gap-2">
+                        <i data-lucide="alert-triangle" class="text-rose-500 w-4 h-4"></i> 비상 관제 센터 (Master Control)
+                    </h3>
+                    <div class="grid grid-cols-2 gap-3">
+                        <button onclick="triggerEmergency()" class="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <i data-lucide="octagon-alert" class="w-4 h-4"></i> 비상 정지
+                        </button>
+                        <button onclick="resetEmergency()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                            <i data-lucide="rotate-ccw" class="w-4 h-4"></i> 정상 복구
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 이기종 장비 리스트 및 제어 -->
+                <div class="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+                    <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                        <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                            <i data-lucide="cpu" class="text-brand-500 w-4 h-4"></i> 장비 리스트 & 제어
+                        </h3>
+                        <span class="text-xs text-slate-400">클릭 시 즉각 제어</span>
+                    </div>
+
+                    <!-- 장비 목록 컨테이너 -->
+                    <div class="divide-y divide-slate-100 dark:divide-slate-700 max-h-[480px] overflow-y-auto">
+                        
+                        <!-- AGV-01 -->
+                        <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <span class="p-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md mt-0.5">
+                                        <i data-lucide="truck" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-900 dark:text-white">AGV-01</span>
+                                            <span class="text-xs px-1.5 py-0.2 bg-blue-50 text-blue-700 rounded dark:bg-blue-950/50 dark:text-blue-300 font-mono">궤도 운행</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-0.5" id="desc-agv-01">상태: 자동 운행중 (스테이션 이동)</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="batt-agv-01">85%</span>
+                                            </span>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="milestone" class="w-3.5 h-3.5"></i> X: <span id="x-agv-01">80</span>, Y: <span id="y-agv-01">10</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1.5 items-end">
+                                    <span id="badge-agv-01" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">충전지 이동</span>
+                                    <button onclick="controlDevice('AGV-01', 'STOP')" class="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded font-semibold text-slate-700 dark:text-slate-300 transition-colors">
+                                        임시정지
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AGV-02 -->
+                        <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <span class="p-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md mt-0.5">
+                                        <i data-lucide="truck" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-900 dark:text-white">AGV-02</span>
+                                            <span class="text-xs px-1.5 py-0.2 bg-blue-50 text-blue-700 rounded dark:bg-blue-950/50 dark:text-blue-300 font-mono">궤도 운행</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-0.5" id="desc-agv-02">상태: 자재 이송 운행중</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="batt-agv-02">62%</span>
+                                            </span>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="milestone" class="w-3.5 h-3.5"></i> X: <span id="x-agv-02">30</span>, Y: <span id="y-agv-02">40</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1.5 items-end">
+                                    <span id="badge-agv-02" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">운행 중</span>
+                                    <button onclick="controlDevice('AGV-02', 'STOP')" class="text-[10px] px-2 py-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded font-semibold text-slate-700 dark:text-slate-300 transition-colors">
+                                        임시정지
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AGV-03 -->
+                        <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <span class="p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-md mt-0.5" id="icon-agv-03">
+                                        <i data-lucide="truck-off" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-900 dark:text-white">AGV-03</span>
+                                            <span class="text-xs px-1.5 py-0.2 bg-slate-100 text-slate-600 rounded dark:bg-slate-700 dark:text-slate-300 font-mono">오프라인</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-0.5" id="desc-agv-03">상태: 대기 장소 수동 정지</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-slate-400"></i> <span id="batt-agv-03">95%</span>
+                                            </span>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="milestone" class="w-3.5 h-3.5"></i> X: <span id="x-agv-03">50</span>, Y: <span id="y-agv-03">50</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1.5 items-end">
+                                    <span id="badge-agv-03" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300">대기 중</span>
+                                    <button id="btn-agv-03" onclick="toggleAgv03()" class="text-[10px] px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold transition-colors">
+                                        기동하기
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AMR-01 -->
+                        <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <span class="p-1.5 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-md mt-0.5">
+                                        <i data-lucide="navigation" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-900 dark:text-white">AMR-01</span>
+                                            <span class="text-xs px-1.5 py-0.2 bg-purple-50 text-purple-700 rounded dark:bg-purple-950/50 dark:text-purple-300 font-mono">자율 경로</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-0.5" id="desc-amr-01">상태: 최적 회피 운행 (경로 변경중)</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-emerald-500"></i> <span id="batt-amr-01">78%</span>
+                                            </span>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="milestone" class="w-3.5 h-3.5"></i> X: <span id="x-amr-01">20</span>, Y: <span id="y-amr-01">75</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1.5 items-end">
+                                    <span id="badge-amr-01" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">회피 자율주행</span>
+                                    <button onclick="controlDevice('AMR-01', 'PATH_RESET')" class="text-[10px] px-2 py-1 bg-purple-600 hover:bg-purple-700 text-white rounded font-semibold transition-colors">
+                                        경로 재탐색
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- AMR-02 -->
+                        <div class="p-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                            <div class="flex items-start justify-between">
+                                <div class="flex items-start gap-3">
+                                    <span class="p-1.5 bg-purple-100 dark:bg-purple-900/40 text-purple-600 dark:text-purple-400 rounded-md mt-0.5">
+                                        <i data-lucide="navigation" class="w-4 h-4"></i>
+                                    </span>
+                                    <div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-bold text-sm text-slate-900 dark:text-white">AMR-02</span>
+                                            <span class="text-xs px-1.5 py-0.2 bg-purple-50 text-purple-700 rounded dark:bg-purple-950/50 dark:text-purple-300 font-mono">자율 경로</span>
+                                        </div>
+                                        <p class="text-xs text-slate-400 mt-0.5" id="desc-amr-02">상태: 리프팅 화물 선적 완료</p>
+                                        <div class="flex items-center gap-3 mt-2 text-xs">
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-amber-500 animate-pulse"></i> <span id="batt-amr-02">19%</span>
+                                            </span>
+                                            <span class="text-slate-300 dark:text-slate-600">|</span>
+                                            <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
+                                                <i data-lucide="milestone" class="w-3.5 h-3.5"></i> X: <span id="x-amr-02">65</span>, Y: <span id="y-amr-02">30</span>
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-1.5 items-end">
+                                    <span id="badge-amr-02" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">배터리 부족</span>
+                                    <button onclick="sendToCharge('AMR-02')" class="text-[10px] px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors">
+                                        충전 스테이션 전송
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- 3. 실시간 통합 제어 이벤트 로그 -->
+        <section class="mt-8 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
+            <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-800/50 flex justify-between items-center">
+                <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
+                    <i data-lucide="terminal" class="text-emerald-500 w-4 h-4"></i> FMS 중앙 관제 명령/상태 로그
+                </h3>
+                <button onclick="clearLogs()" class="text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 flex items-center gap-1 transition-colors">
+                    <i data-lucide="trash-2" class="w-3.5 h-3.5"></i> 로그 초기화
+                </button>
+            </div>
+            <div class="p-4 bg-slate-900 dark:bg-slate-950 text-emerald-400 font-mono text-xs h-[180px] overflow-y-auto leading-relaxed" id="terminal-log">
+                <div class="text-slate-500">// FMS 통합관제 시뮬레이터 실시간 네트워크 소켓 데이터...</div>
+                <div>[08:00:00] [SYSTEM] FMS 통합 제어 웹 인터페이스 로드 완료 (Local Mode)</div>
+                <div>[08:00:01] [ABCS-01] 가동 준비 상태 (Online)</div>
+                <div>[08:00:01] [ABCS-02] 충전 도크 사용중 (AGV-01 충전 진행중)</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- 사용자 피드백 토스트 모달 -->
+    <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-20 opacity-0 transition-all duration-300 bg-slate-900 text-white dark:bg-white dark:text-slate-900 px-4 py-3 rounded-lg shadow-xl flex items-center gap-3 text-sm">
+        <i data-lucide="info" class="w-4 h-4 text-brand-500" id="toast-icon"></i>
+        <span id="toast-message">시스템 메시지입니다.</span>
+    </div>
+
+    <script>
+        // Lucide 아이콘 초기화
+        lucide.createIcons();
+
+        // 실시간 시스템 상태 변수
+        let emergencyMode = false;
+        let isAgv03Active = false;
+
+        // 장비 좌표 및 배터리 정보 객체
+        const devices = {
+            'AGV-01': { x: 80, y: 10, battery: 85, state: '충전 중' },
+            'AGV-02': { x: 30, y: 40, battery: 62, state: '운행 중' },
+            'AGV-03': { x: 50, y: 50, battery: 95, state: '대기 중' },
+            'AMR-01': { x: 20, y: 75, battery: 78, state: '회피 자율주행' },
+            'AMR-02': { x: 65, y: 30, battery: 19, state: '배터리 부족' }
+        };
+
+        // 다크 모드 토글 로직
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        themeToggleBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+        // 실시간 디지털 타이머 설정
+        setInterval(() => {
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            document.getElementById('system-time').innerText = timeStr;
+        }, 1000);
+
+        // 지도상 좌표 갱신 모듈
+        function updateMapPositions() {
+            for (const [id, data] of Object.entries(devices)) {
+                const element = document.getElementById(`map-${id.toLowerCase()}`);
+                if (element) {
+                    element.style.left = `${data.x}%`;
+                    element.style.top = `${data.y}%`;
+                }
+            }
+        }
+
+        // 초기 화면 좌표 매핑
+        updateMapPositions();
+
+        // 실시간 무작위 시뮬레이션 인터벌 (각 설비 이동 등)
+        setInterval(() => {
+            if (emergencyMode) return; // 비상 정지 상태 시 이동 보류
+
+            // AGV-01 (도크 부근 완속 제어 충전 중)
+            if (Math.random() > 0.5) {
+                devices['AGV-01'].battery = Math.min(100, devices['AGV-01'].battery + 1);
+                const batt01 = document.getElementById('batt-agv-01');
+                if (batt01) batt01.innerText = devices['AGV-01'].battery + '%';
+            }
+
+            // AGV-02 (고유 루트 자율 궤도 이동 시뮬레이션)
+            devices['AGV-02'].x = parseFloat((devices['AGV-02'].x + (Math.random() * 4 - 2)).toFixed(1));
+            devices['AGV-02'].y = parseFloat((devices['AGV-02'].y + (Math.random() * 4 - 2)).toFixed(1));
+            devices['AGV-02'].x = Math.max(15, Math.min(85, devices['AGV-02'].x));
+            devices['AGV-02'].y = Math.max(15, Math.min(85, devices['AGV-02'].y));
+            document.getElementById('x-agv-02').innerText = devices['AGV-02'].x;
+            document.getElementById('y-agv-02').innerText = devices['AGV-02'].y;
+            if (Math.random() > 0.7) {
+                devices['AGV-02'].battery = Math.max(10, devices['AGV-02'].battery - 1);
+                document.getElementById('batt-agv-02').innerText = devices['AGV-02'].battery + '%';
+            }
+
+            // AGV-03 (활성화 상태 일때만 자율 이동 및 배터리 소모)
+            if (isAgv03Active) {
+                devices['AGV-03'].x = parseFloat((devices['AGV-03'].x + (Math.random() * 6 - 3)).toFixed(1));
+                devices['AGV-03'].y = parseFloat((devices['AGV-03'].y + (Math.random() * 6 - 3)).toFixed(1));
+                devices['AGV-03'].x = Math.max(15, Math.min(85, devices['AGV-03'].x));
+                devices['AGV-03'].y = Math.max(15, Math.min(85, devices['AGV-03'].y));
+                document.getElementById('x-agv-03').innerText = devices['AGV-03'].x;
+                document.getElementById('y-agv-03').innerText = devices['AGV-03'].y;
+                if (Math.random() > 0.8) {
+                    devices['AGV-03'].battery = Math.max(10, devices['AGV-03'].battery - 1);
+                    document.getElementById('batt-agv-03').innerText = devices['AGV-03'].battery + '%';
+                }
+            }
+
+            // AMR-01 (자율 모바일 로봇 무작위 회피 이동 경로 갱신)
+            devices['AMR-01'].x = parseFloat((devices['AMR-01'].x + (Math.random() * 6 - 3)).toFixed(1));
+            devices['AMR-01'].y = parseFloat((devices['AMR-01'].y + (Math.random() * 6 - 3)).toFixed(1));
+            devices['AMR-01'].x = Math.max(10, Math.min(90, devices['AMR-01'].x));
+            devices['AMR-01'].y = Math.max(10, Math.min(90, devices['AMR-01'].y));
+            document.getElementById('x-amr-01').innerText = devices['AMR-01'].x;
+            document.getElementById('y-amr-01').innerText = devices['AMR-01'].y;
+
+            // AMR-02 (배터리 수준에 따른 가동 특성 분기 시뮬레이션)
+            if (devices['AMR-02'].battery < 20) {
+                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 1 - 0.5)).toFixed(1));
+                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 1 - 0.5)).toFixed(1));
+            } else {
+                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 4 - 2)).toFixed(1));
+                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 4 - 2)).toFixed(1));
+            }
+            document.getElementById('x-amr-02').innerText = devices['AMR-02'].x;
+            document.getElementById('y-amr-02').innerText = devices['AMR-02'].y;
+
+            updateMapPositions();
+        }, 1500);
+
+        // 중앙 관제 콘솔에 로그 메시지 출력 모듈
+        function addLog(source, msg, type = 'info') {
+            const terminal = document.getElementById('terminal-log');
+            const now = new Date();
+            const timeStr = now.toTimeString().split(' ')[0];
+            const logDiv = document.createElement('div');
+            
+            if (type === 'error') {
+                logDiv.className = 'text-rose-500 font-semibold';
+            } else if (type === 'success') {
+                logDiv.className = 'text-emerald-400 font-semibold';
+            } else {
+                logDiv.className = 'text-slate-300';
+            }
+
+            logDiv.innerText = `[${timeStr}] [${source}] ${msg}`;
+            terminal.appendChild(logDiv);
+            terminal.scrollTop = terminal.scrollHeight;
+        }
+
+        // 알림 토스트 팝업 제어
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toast-message');
+            toastMsg.innerText = message;
+            
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // 수동 제어 관제 명령 송신 시뮬레이션
+        function controlDevice(deviceId, command) {
+            if (emergencyMode) {
+                showToast('🚨 비상정지 모드 해제 전까지 기기를 제어할 수 없습니다.', true);
+                addLog('FMS-MGR', `제어 거부: ${deviceId} 명령 ${command} 실패 (비상정지 상태)`, 'error');
+                return;
+            }
+
+            addLog('FMS-MGR', `송신 명령 👉 ${deviceId} [주행 모드: ${command}]`, 'info');
+            showToast(`${deviceId}에 관제 지령이 송신되었습니다.`);
+
+            if (deviceId === 'AGV-01') {
+                document.getElementById('desc-agv-01').innerText = "상태: 명령 대기 수동 제어";
+                document.getElementById('badge-agv-01').innerText = "일시 정지";
+                document.getElementById('badge-agv-01').className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200";
+            }
+            if (deviceId === 'AGV-02') {
+                document.getElementById('desc-agv-02').innerText = "상태: 일시 중단됨 (FMS 강제)";
+                document.getElementById('badge-agv-02').innerText = "보류 중";
+                document.getElementById('badge-agv-02').className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200";
+            }
+            if (deviceId === 'AMR-01') {
+                addLog('AMR-01', '라이다 센서 기반 주행 경로 실시간 재스캔 성공.', 'success');
+            }
+        }
+
+        // ABCS 전용 모듈 연동 충전 유도 기능
+        function sendToCharge(deviceId) {
+            if (emergencyMode) {
+                showToast('🚨 비상정지 모드 상태에서는 기기 이동이 불가능합니다.', true);
+                return;
+            }
+            addLog('FMS-MGR', `${deviceId}를 ABCS-01(자동충전기)로 자동 도킹 연동 지시`, 'info');
+            showToast('충전 스테이션 배정 및 경로 추적을 시작합니다.');
+
+            devices['AMR-02'].x = 10;
+            devices['AMR-02'].y = 80;
+            devices['AMR-02'].battery = 45;
+
+            document.getElementById('desc-amr-02').innerText = "상태: ABCS-01 자동 충전 및 도킹 성공";
+            document.getElementById('badge-amr-02').innerText = "충전 진행";
+            document.getElementById('badge-amr-02').className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
+            document.getElementById('batt-amr-02').innerText = '45%';
+            document.getElementById('batt-amr-02').className = 'text-emerald-500';
+
+            updateMapPositions();
+        }
+
+        // AGV-03 설비 상태 온/오프 가동 연동
+        function toggleAgv03() {
+            if (emergencyMode) {
+                showToast('🚨 비상 정지 상태에서는 가동을 전환할 수 없습니다.', true);
+                return;
+            }
+
+            const btn = document.getElementById('btn-agv-03');
+            const badge = document.getElementById('badge-agv-03');
+            const desc = document.getElementById('desc-agv-03');
+            const icon = document.getElementById('icon-agv-03');
+            const body = document.getElementById('agv-03-body');
+            const label = document.getElementById('agv-03-label');
+
+            if (!isAgv03Active) {
+                isAgv03Active = true;
+                btn.innerText = "대기 전환";
+                btn.className = "text-[10px] px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded font-semibold transition-colors";
+                
+                badge.innerText = "운행 중";
+                badge.className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300";
+                
+                desc.innerText = "상태: 통합관제 연동 정상 운행";
+                
+                icon.className = "p-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md mt-0.5";
+                icon.innerHTML = '<i data-lucide="truck" class="w-4 h-4"></i>';
+                
+                body.className = "w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800";
+                label.className = "mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow";
+
+                document.getElementById('stat-agv').innerText = "3 / 3 대";
+
+                addLog('AGV-03', 'FMS 시스템 핸드셰이크 성공. 무선 노드 정상 활성화', 'success');
+                showToast('AGV-03호기를 자율 운행 풀에 편입했습니다.');
+            } else {
+                isAgv03Active = false;
+                btn.innerText = "기동하기";
+                btn.className = "text-[10px] px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-semibold transition-colors";
+                
+                badge.innerText = "대기 중";
+                badge.className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300";
+                
+                desc.innerText = "상태: 대기 장소 수동 정지";
+                
+                icon.className = "p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-md mt-0.5";
+                icon.innerHTML = '<i data-lucide="truck-off" class="w-4 h-4"></i>';
+                
+                body.className = "w-9 h-9 rounded-full bg-slate-400 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800";
+                label.className = "mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-slate-600 text-white rounded shadow";
+
+                document.getElementById('stat-agv').innerText = "2 / 3 대";
+
+                addLog('AGV-03', '호스트 명령에 의한 기기 임시 휴면 상태 진입', 'info');
+                showToast('AGV-03호기 자율 운행을 일시정지하고 대기 상태로 변경했습니다.');
+            }
+            lucide.createIcons();
+        }
+
+        // 전체 비상 정지 발생 제어
+        function triggerEmergency() {
+            emergencyMode = true;
+            document.getElementById('stat-alert').innerText = "위험 (Emergency)";
+            document.getElementById('stat-alert').className = "text-2xl font-bold font-mono text-rose-600 dark:text-rose-400";
+            
+            const iconBox = document.getElementById('alert-icon-box');
+            iconBox.className = "p-3 bg-rose-100 dark:bg-rose-950/50 text-rose-600 rounded-lg animate-bounce";
+            iconBox.innerHTML = '<i data-lucide="alert-triangle" class="w-6 h-6"></i>';
+
+            addLog('SYSTEM', '🚨 [MASTER EMERGENCY] 전체 이기종 설비 비상 정지 발령 및 강제 브레이킹 처리', 'error');
+            showToast('전체 필드에 비상 정지 명령을 발령했습니다.', true);
+            lucide.createIcons();
+        }
+
+        // 전체 비상 정지 복구 제어
+        function resetEmergency() {
+            if (!emergencyMode) {
+                showToast('현재 작동 중인 비상경보 상황이 없습니다.');
+                return;
+            }
+            emergencyMode = false;
+            document.getElementById('stat-alert').innerText = "정상 (0)";
+            document.getElementById('stat-alert').className = "text-2xl font-bold font-mono text-emerald-600 dark:text-emerald-400";
+            
+            const iconBox = document.getElementById('alert-icon-box');
+            iconBox.className = "p-3 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-500 rounded-lg";
+            iconBox.innerHTML = '<i data-lucide="shield-check" class="w-6 h-6"></i>';
+
+            addLog('SYSTEM', '✅ [MASTER RECOVERY] 비상상황 해제, 자율 모바일 에이전트 주행 제어 재활성화', 'success');
+            showToast('비상 정지가 해제되어 정상 관제 체제로 복귀했습니다.');
+            lucide.createIcons();
+        }
+
+        // 콘솔 로그 영역 초기화
+        function clearLogs() {
+            const terminal = document.getElementById('terminal-log');
+            terminal.innerHTML = '<div class="text-slate-500">// 로그가 정상 초기화되었습니다.</div>';
+            showToast('모든 시스템 로그가 초기화되었습니다.');
+        }
+    </script>
+</body>
+</html>
