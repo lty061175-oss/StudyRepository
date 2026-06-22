@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>통합관제시스템 (FMS) 테스트베드</title>
+    <title>3D 통합관제시스템 (FMS) 테스트베드</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -26,6 +26,10 @@
     </script>
     <!-- Lucide Icons CDN -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Three.js CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- OrbitControls CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     <style>
         @keyframes pulse-soft {
             0%, 100% { opacity: 1; }
@@ -34,20 +38,10 @@
         .animate-pulse-soft {
             animation: pulse-soft 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
-        .grid-bg {
-            background-size: 20px 20px;
-            background-image: linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-        }
-        .dark .grid-bg {
-            background-image: linear-gradient(to right, rgba(51, 65, 85, 0.2) 1px, transparent 1px),
-                              linear-gradient(to bottom, rgba(51, 65, 85, 0.2) 1px, transparent 1px);
-        }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-200">
 
-    <!-- 상단 내비게이션 바 -->
     <nav class="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
@@ -56,8 +50,8 @@
                         <i data-lucide="layout-dashboard" class="w-6 h-6"></i>
                     </div>
                     <div>
-                        <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">FMS 통합관제시스템</span>
-                        <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 animate-pulse-soft">로컬 시뮬레이터 구동중</span>
+                        <span class="font-bold text-lg tracking-tight text-slate-900 dark:text-white">FMS 3D 통합관제시스템</span>
+                        <span class="ml-2 px-2 py-0.5 text-xs font-semibold rounded bg-emerald-100 dark:bg-emerald-900/40 text-emerald-800 dark:text-emerald-300 animate-pulse-soft">3D 로컬 시뮬레이터 구동중</span>
                     </div>
                 </div>
                 
@@ -80,7 +74,6 @@
     <!-- 메인 레이아웃 -->
     <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         
-        <!-- 1. 상단 종합 현황판 (요약 카드) -->
         <section class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <!-- AGV 요약 -->
             <div class="bg-white dark:bg-slate-800 p-5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
@@ -127,97 +120,42 @@
             </div>
         </section>
 
-        <!-- 2. 관제 레이아웃: 맵 시뮬레이터 & 실시간 제어 패널 -->
+        <!-- 2. 관제 레이아웃: 3D 시뮬레이터 & 실시간 제어 패널 -->
         <section class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            <!-- 왼쪽/중앙: 2D 시각화 모니터링 맵 -->
             <div class="lg:col-span-2 flex flex-col bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
                 <div class="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/50">
                     <div>
                         <h2 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                            <i data-lucide="map" class="w-5 h-5 text-brand-500"></i> 실시간 관제 모니터 (2D 맵)
+                            <i data-lucide="box" class="w-5 h-5 text-brand-500"></i> 실시간 3D 스마트공장 모니터
                         </h2>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">장비들의 실시간 실내 격자 위치 매핑 시뮬레이터</p>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">마우스 드래그로 각도 회전, 휠 스크롤로 확대/축소 가능</p>
                     </div>
-                    <span class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1 rounded-full flex items-center gap-1">
-                        <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span> Live Feedback
-                    </span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="resetCamera()" class="text-xs bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-200 px-2.5 py-1.5 rounded-lg flex items-center gap-1 transition-all">
+                            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> 뷰 초기화
+                        </button>
+                        <span class="text-xs font-mono bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2.5 py-1.5 rounded-lg flex items-center gap-1">
+                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-ping"></span> Realtime 3D
+                        </span>
+                    </div>
                 </div>
                 
-                <!-- 맵 영역 -->
-                <div class="p-6 flex-1 flex items-center justify-center min-h-[400px] grid-bg relative">
-                    <div class="w-full max-w-[600px] aspect-square border border-dashed border-slate-300 dark:border-slate-700 rounded-xl relative overflow-hidden bg-slate-50/30 dark:bg-slate-900/30" id="map-container">
-                        <!-- 격자 가이드 라인 -->
-                        <div class="absolute inset-0 grid grid-cols-5 grid-rows-5 pointer-events-none">
-                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
-                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
-                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
-                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
-                            <div class="border-[0.5px] border-slate-200/40 dark:border-slate-700/20"></div>
-                        </div>
-
-                        <!-- 고정 충전 스테이션 표기 (ABCS) -->
-                        <div id="abcs-ch1" class="absolute transition-all duration-500 p-2 rounded-lg flex flex-col items-center justify-center text-[10px] font-bold" style="left: 10%; top: 80%;">
-                            <i data-lucide="battery-charging" class="w-5 h-5 text-amber-500"></i>
-                            <span class="text-slate-700 dark:text-slate-300 font-mono mt-0.5">ABCS-01</span>
-                            <span class="px-1 text-[8px] rounded bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">사용가능</span>
-                        </div>
-
-                        <div id="abcs-ch2" class="absolute transition-all duration-500 p-2 rounded-lg flex flex-col items-center justify-center text-[10px] font-bold" style="left: 80%; top: 10%;">
-                            <i data-lucide="battery-charging" class="w-5 h-5 text-amber-500"></i>
-                            <span class="text-slate-700 dark:text-slate-300 font-mono mt-0.5">ABCS-02</span>
-                            <span id="abcs-02-badge" class="px-1 text-[8px] rounded bg-blue-100 text-blue-800 dark:bg-blue-950/50 dark:text-blue-300">충전중 (AGV-01)</span>
-                        </div>
-
-                        <!-- 실시간 움직이는 장비 노드들 -->
-                        <div id="map-agv-01" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                            <div class="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
-                                <i data-lucide="truck" class="w-5 h-5"></i>
-                            </div>
-                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow">AGV-01</span>
-                        </div>
-
-                        <div id="map-agv-02" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                            <div class="w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
-                                <i data-lucide="truck" class="w-5 h-5"></i>
-                            </div>
-                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow">AGV-02</span>
-                        </div>
-
-                        <div id="map-agv-03" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                            <div id="agv-03-body" class="w-9 h-9 rounded-full bg-slate-400 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
-                                <i data-lucide="truck" class="w-5 h-5"></i>
-                            </div>
-                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-slate-600 text-white rounded shadow" id="agv-03-label">AGV-03</span>
-                        </div>
-
-                        <div id="map-amr-01" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                            <div class="w-9 h-9 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
-                                <i data-lucide="navigation" class="w-5 h-5"></i>
-                            </div>
-                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-purple-600 text-white rounded shadow">AMR-01</span>
-                        </div>
-
-                        <div id="map-amr-02" class="absolute transition-all duration-1000 ease-in-out -translate-x-1/2 -translate-y-1/2 flex flex-col items-center z-10">
-                            <div class="w-9 h-9 rounded-full bg-purple-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800">
-                                <i data-lucide="navigation" class="w-5 h-5"></i>
-                            </div>
-                            <span class="mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-purple-600 text-white rounded shadow">AMR-02</span>
-                        </div>
-                    </div>
+                <!-- 3D 렌더링 컨테이너 -->
+                <div class="p-1 flex-1 min-h-[500px] relative bg-slate-950" id="map-container">
+                    <div id="three-canvas-container" class="w-full h-full min-h-[500px] rounded-xl overflow-hidden"></div>
                 </div>
             </div>
 
             <!-- 오른쪽: 실시간 장비 목록 & 개별 제어판 -->
             <div class="space-y-6">
                 
-                <!-- 수동 강제 중단 및 복구 마스터 제어 -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <h3 class="font-bold text-slate-900 dark:text-white mb-3 text-sm flex items-center gap-2">
                         <i data-lucide="alert-triangle" class="text-rose-500 w-4 h-4"></i> 비상 관제 센터 (Master Control)
                     </h3>
                     <div class="grid grid-cols-2 gap-3">
-                        <button onclick="triggerEmergency()" class="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
+                        <button onclick="triggerEmergency()" class="py-2.5 px-4 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors shadow-md shadow-rose-600/10">
                             <i data-lucide="octagon-alert" class="w-4 h-4"></i> 비상 정지
                         </button>
                         <button onclick="resetEmergency()" class="py-2.5 px-4 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-100 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
@@ -232,7 +170,7 @@
                         <h3 class="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                             <i data-lucide="cpu" class="text-brand-500 w-4 h-4"></i> 장비 리스트 & 제어
                         </h3>
-                        <span class="text-xs text-slate-400">클릭 시 즉각 제어</span>
+                        <span class="text-xs text-slate-400">명령 즉시 반응</span>
                     </div>
 
                     <!-- 장비 목록 컨테이너 -->
@@ -385,7 +323,7 @@
                                         <p class="text-xs text-slate-400 mt-0.5" id="desc-amr-02">상태: 리프팅 화물 선적 완료</p>
                                         <div class="flex items-center gap-3 mt-2 text-xs">
                                             <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
-                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-amber-500 animate-pulse"></i> <span id="batt-amr-02">19%</span>
+                                                <i data-lucide="battery" class="w-3.5 h-3.5 text-amber-500 animate-pulse font-bold"></i> <span id="batt-amr-02">19%</span>
                                             </span>
                                             <span class="text-slate-300 dark:text-slate-600">|</span>
                                             <span class="flex items-center gap-1 font-mono text-slate-500 dark:text-slate-400">
@@ -396,8 +334,8 @@
                                 </div>
                                 <div class="flex flex-col gap-1.5 items-end">
                                     <span id="badge-amr-02" class="text-[10px] px-2 py-0.5 font-semibold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">배터리 부족</span>
-                                    <button onclick="sendToCharge('AMR-02')" class="text-[10px] px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors">
-                                        충전 스테이션 전송
+                                    <button onclick="sendToCharge('AMR-02')" class="text-[10px] px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-semibold transition-colors animate-pulse">
+                                        충전 도킹 요청
                                     </button>
                                 </div>
                             </div>
@@ -421,7 +359,7 @@
             </div>
             <div class="p-4 bg-slate-900 dark:bg-slate-950 text-emerald-400 font-mono text-xs h-[180px] overflow-y-auto leading-relaxed" id="terminal-log">
                 <div class="text-slate-500">// FMS 통합관제 시뮬레이터 실시간 네트워크 소켓 데이터...</div>
-                <div>[08:00:00] [SYSTEM] FMS 통합 제어 웹 인터페이스 로드 완료 (Local Mode)</div>
+                <div>[08:00:00] [SYSTEM] FMS 3D 통합 제어 웹 인터페이스 로드 완료 (Local Mode)</div>
                 <div>[08:00:01] [ABCS-01] 가동 준비 상태 (Online)</div>
                 <div>[08:00:01] [ABCS-02] 충전 도크 사용중 (AGV-01 충전 진행중)</div>
             </div>
@@ -443,7 +381,7 @@
         let emergencyMode = false;
         let isAgv03Active = false;
 
-        // 장비 좌표 및 배터리 정보 객체
+        // 장비 물리적 좌표 및 배터리 상태 (FMS 2D 원시 좌표 백데이터)
         const devices = {
             'AGV-01': { x: 80, y: 10, battery: 85, state: '충전 중' },
             'AGV-02': { x: 30, y: 40, battery: 62, state: '운행 중' },
@@ -452,10 +390,22 @@
             'AMR-02': { x: 65, y: 30, battery: 19, state: '배터리 부족' }
         };
 
-        // 다크 모드 토글 로직
+        // 3D 렌더러 전역 변수
+        let scene, camera, renderer, controls;
+        let vehicleMeshes = {};
+        let abcsMeshes = {};
+        let floorGrid;
+        let ambientLight, hemiLight, dirLight, warningPointLight;
+
+        // 다크 모드 감지 및 조명 반영
+        let isDarkMode = document.documentElement.classList.contains('dark');
+
+        // 테마 토글 핸들러
         const themeToggleBtn = document.getElementById('theme-toggle');
         themeToggleBtn.addEventListener('click', () => {
             document.documentElement.classList.toggle('dark');
+            isDarkMode = document.documentElement.classList.contains('dark');
+            update3DTheme();
         });
 
         // 실시간 디지털 타이머 설정
@@ -465,23 +415,322 @@
             document.getElementById('system-time').innerText = timeStr;
         }, 1000);
 
-        // 지도상 좌표 갱신 모듈
-        function updateMapPositions() {
-            for (const [id, data] of Object.entries(devices)) {
-                const element = document.getElementById(`map-${id.toLowerCase()}`);
-                if (element) {
-                    element.style.left = `${data.x}%`;
-                    element.style.top = `${data.y}%`;
-                }
+        // 2D 좌표 -> 3D 월드 좌표 변환 헬퍼 (맵 크기: 40 x 40 상의 좌표계로 투사)
+        function mapTo3D(coordVal) {
+            return (coordVal / 100) * 40 - 20; 
+        }
+
+        function init3D() {
+            const container = document.getElementById('three-canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            // 1. Scene 생성
+            scene = new THREE.Scene();
+            scene.background = isDarkMode ? new THREE.Color(0x0f172a) : new THREE.Color(0xf1f5f9);
+
+            // 2. Camera 생성
+            camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+            camera.position.set(0, 32, 38);
+
+            // 3. Renderer 생성
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+
+            // 4. OrbitControls 추가 (마우스 궤도 카메라 제어)
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2.1; // 땅바닥 뚫기 방지
+            controls.minDistance = 10;
+            controls.maxDistance = 80;
+
+            // 5. 풍부한 하이브리드 조명 시스템 구축
+            // HemisphereLight를 배치하여 그림자 속 음영에 입체적인 반사 하늘광 추가 (장비가 검어지는 것을 방지)
+            hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, isDarkMode ? 0.5 : 0.7);
+            hemiLight.position.set(0, 20, 0);
+            scene.add(hemiLight);
+
+            ambientLight = new THREE.AmbientLight(0xffffff, isDarkMode ? 0.3 : 0.4);
+            scene.add(ambientLight);
+
+            dirLight = new THREE.DirectionalLight(0xffffff, isDarkMode ? 0.5 : 0.8);
+            dirLight.position.set(15, 30, 15);
+            dirLight.castShadow = true;
+            dirLight.shadow.mapSize.width = 1024;
+            dirLight.shadow.mapSize.height = 1024;
+            scene.add(dirLight);
+
+            // 비상경보 전용 회전 붉은 경광등 빛 추가
+            warningPointLight = new THREE.PointLight(0xff0000, 0, 100);
+            warningPointLight.position.set(0, 10, 0);
+            scene.add(warningPointLight);
+
+            // 6. 스마트 팩토리 바닥 그리드 및 판 플레이트 설치
+            floorGrid = new THREE.GridHelper(40, 20, 0x3b82f6, isDarkMode ? 0x334155 : 0xcbced4);
+            floorGrid.position.y = 0.01;
+            scene.add(floorGrid);
+
+            const floorGeo = new THREE.PlaneGeometry(40, 40);
+            const floorMat = new THREE.MeshStandardMaterial({ 
+                color: isDarkMode ? 0x1e293b : 0xe2e8f0,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.receiveShadow = true;
+            scene.add(floor);
+
+            // 7. ABCS 고정 충전 스테이션 3D 빌드
+            buildABCS('ABCS-01', -16, 12, 0x10b981); // 사용 가능 (초록)
+            buildABCS('ABCS-02', 12, -16, 0x3b82f6); // 충전 중 (파랑)
+
+            // 8. 움직이는 기기(AGV, AMR) 3D 애셋 생성 및 맵 상 배치
+            // metalness를 0.1~0.2 수준으로 낮추고 roughness를 적절히 조절하여 반사 맵이 없어도 자체 디퓨즈 컬러가 명확히 나오도록 수정
+            buildAGV('AGV-01', mapTo3D(devices['AGV-01'].x), mapTo3D(devices['AGV-01'].y), 0x3b82f6);
+            buildAGV('AGV-02', mapTo3D(devices['AGV-02'].x), mapTo3D(devices['AGV-02'].y), 0x3b82f6);
+            buildAGV('AGV-03', mapTo3D(devices['AGV-03'].x), mapTo3D(devices['AGV-03'].y), 0x64748b); // Offline 회색
+            buildAMR('AMR-01', mapTo3D(devices['AMR-01'].x), mapTo3D(devices['AMR-01'].y), 0xa855f7);
+            buildAMR('AMR-02', mapTo3D(devices['AMR-02'].x), mapTo3D(devices['AMR-02'].y), 0xf59e0b); // 배터리 부족 황색
+
+            // 창 크기 변경 대응
+            window.addEventListener('resize', onWindowResize);
+        }
+
+        // ABCS 3D 스테이션 빌딩
+        function buildABCS(id, x, z, glowColorHex) {
+            const abcsGroup = new THREE.Group();
+            
+            // 베이스 포스트
+            const postGeo = new THREE.BoxGeometry(2, 4, 2);
+            const postMat = new THREE.MeshStandardMaterial({ color: 0x475569, metalness: 0.2, roughness: 0.4 });
+            const post = new THREE.Mesh(postGeo, postMat);
+            post.position.y = 2;
+            post.castShadow = true;
+            abcsGroup.add(post);
+
+            // 상단 자동화 도킹 패널
+            const dockGeo = new THREE.BoxGeometry(2.4, 0.4, 1.4);
+            const dockMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.1 });
+            const dock = new THREE.Mesh(dockGeo, dockMat);
+            dock.position.y = 3.6;
+            abcsGroup.add(dock);
+
+            // 상태 글로우 표시등 구체
+            const glowGeo = new THREE.SphereGeometry(0.3, 16, 16);
+            const glowMat = new THREE.MeshBasicMaterial({ color: glowColorHex });
+            const glow = new THREE.Mesh(glowGeo, glowMat);
+            glow.position.set(0, 4.2, 0);
+            abcsGroup.add(glow);
+
+            abcsGroup.position.set(x, 0, z);
+            scene.add(abcsGroup);
+            abcsMeshes[id] = { group: abcsGroup, glow: glow };
+        }
+
+        // AGV 3D 차량 제작
+        function buildAGV(id, x, z, colorHex) {
+            const agvGroup = new THREE.Group();
+
+            // 바디 섀시 (metalness 값을 0.1로 낮추어 본래 색상이 검게 타지 않고 완벽히 발색되도록 설정)
+            const bodyGeo = new THREE.BoxGeometry(2.4, 0.9, 1.6);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.1, roughness: 0.3 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.65;
+            body.castShadow = true;
+            agvGroup.add(body);
+
+            // 상단 자재 캐리어 덱
+            const deckGeo = new THREE.BoxGeometry(2.0, 0.2, 1.4);
+            const deckMat = new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.1 });
+            const deck = new THREE.Mesh(deckGeo, deckMat);
+            deck.position.y = 1.1;
+            agvGroup.add(deck);
+
+            // 로봇 바퀴 4개
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.3, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.5 });
+            const wheelOffsets = [
+                {x: -0.8, z: -0.85}, {x: 0.8, z: -0.85},
+                {x: -0.8, z: 0.85}, {x: 0.8, z: 0.85}
+            ];
+            wheelOffsets.forEach(offset => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(offset.x, 0.35, offset.z);
+                wheel.castShadow = true;
+                agvGroup.add(wheel);
+            });
+
+            // 3D 위치 반영
+            agvGroup.position.set(x, 0, z);
+            scene.add(agvGroup);
+            
+            // 3D 렌더 추적용 객체 생성
+            vehicleMeshes[id] = {
+                group: agvGroup,
+                bodyMesh: body,
+                type: 'AGV',
+                targetX: x,
+                targetZ: z,
+                currentRotation: 0
+            };
+        }
+
+        // AMR 자율이동로봇 제작
+        function buildAMR(id, x, z, colorHex) {
+            const amrGroup = new THREE.Group();
+
+            // 본체 몸체 (원통형 몸체 역시 금속성을 최소화하여 본래의 보라/황색 등이 명확히 노출되도록 개선)
+            const bodyGeo = new THREE.CylinderGeometry(0.9, 1.0, 1.1, 16);
+            const bodyMat = new THREE.MeshStandardMaterial({ color: colorHex, metalness: 0.1, roughness: 0.3 });
+            const body = new THREE.Mesh(bodyGeo, bodyMat);
+            body.position.y = 0.65;
+            body.castShadow = true;
+            amrGroup.add(body);
+
+            // 상단 LIDAR 로테이터 캡
+            const lidarGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.25, 12);
+            const lidarMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.2 });
+            const lidar = new THREE.Mesh(lidarGeo, lidarMat);
+            lidar.position.y = 1.25;
+            amrGroup.add(lidar);
+
+            // 구동 바퀴 2개 부착
+            const wheelGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.2, 16);
+            const wheelMat = new THREE.MeshStandardMaterial({ color: 0x111827, roughness: 0.5 });
+            [-0.7, 0.7].forEach(side => {
+                const wheel = new THREE.Mesh(wheelGeo, wheelMat);
+                wheel.rotation.x = Math.PI / 2;
+                wheel.position.set(0, 0.35, side);
+                amrGroup.add(wheel);
+            });
+
+            // AMR 그룹 씬 배치 및 변수 버그(agrGroup -> amrGroup) 수정 완료
+            amrGroup.position.set(x, 0, z);
+            scene.add(amrGroup);
+
+            vehicleMeshes[id] = {
+                group: amrGroup,
+                bodyMesh: body,
+                lidarMesh: lidar,
+                type: 'AMR',
+                targetX: x,
+                targetZ: z,
+                currentRotation: 0
+            };
+        }
+
+        // 다크모드/라이트모드 실시간 조명 및 바닥 컬러 동기화 보조 함수
+        function update3DTheme() {
+            if (isDarkMode) {
+                scene.background = new THREE.Color(0x0f172a);
+                hemiLight.color.setHex(0xffffff);
+                hemiLight.groundColor.setHex(0x111827);
+                hemiLight.intensity = 0.5;
+                ambientLight.intensity = 0.3;
+                dirLight.intensity = 0.5;
+                floorGrid.material.color.setHex(0x334155);
+            } else {
+                scene.background = new THREE.Color(0xf1f5f9);
+                hemiLight.color.setHex(0xffffff);
+                hemiLight.groundColor.setHex(0x444444);
+                hemiLight.intensity = 0.7;
+                ambientLight.intensity = 0.4;
+                dirLight.intensity = 0.8;
+                floorGrid.material.color.setHex(0xcbced4);
             }
         }
 
-        // 초기 화면 좌표 매핑
-        updateMapPositions();
+        // 뷰 원점 복귀 단추 처리
+        function resetCamera() {
+            controls.reset();
+            camera.position.set(0, 32, 38);
+            controls.target.set(0, 0, 0);
+            showToast('카메라 뷰 각도가 초기화되었습니다.');
+        }
 
-        // 실시간 무작위 시뮬레이션 인터벌 (각 설비 이동 등)
+        // 창 크기 대응
+        function onWindowResize() {
+            const container = document.getElementById('three-canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(width, height);
+        }
+
+        // 애니메이션 루프 (매 프레임 갱신)
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // OrbitControls 역학 처리
+            controls.update();
+
+            // 1. 비상 정지 경광등 회전 애니메이션 연출
+            if (emergencyMode) {
+                warningPointLight.intensity = Math.sin(Date.now() * 0.01) * 3 + 4;
+                warningPointLight.position.x = Math.sin(Date.now() * 0.005) * 10;
+                warningPointLight.position.z = Math.cos(Date.now() * 0.005) * 10;
+            } else {
+                warningPointLight.intensity = 0;
+            }
+
+            // 2. 이기종 주행 단말들의 점진적 보간 이동 연출 (Lerp 알고리즘)
+            for (const [id, data] of Object.entries(devices)) {
+                const meshInfo = vehicleMeshes[id];
+                if (meshInfo) {
+                    meshInfo.targetX = mapTo3D(data.x);
+                    meshInfo.targetZ = mapTo3D(data.y);
+
+                    const group = meshInfo.group;
+                    const prevX = group.position.x;
+                    const prevZ = group.position.z;
+
+                    // 스무스 보간 연산 (현재값에 0.04를 곱해 다가감)
+                    const lerpFactor = 0.04;
+                    group.position.x += (meshInfo.targetX - group.position.x) * lerpFactor;
+                    group.position.z += (meshInfo.targetZ - group.position.z) * lerpFactor;
+
+                    // 이동 벡터 기반 주행 회전 각도 연산
+                    const dx = group.position.x - prevX;
+                    const dz = group.position.z - prevZ;
+                    const dist = Math.sqrt(dx * dx + dz * dz);
+
+                    if (dist > 0.01) {
+                        const targetAngle = Math.atan2(dx, dz);
+                        // 각도 스무스 보간
+                        let diff = targetAngle - group.rotation.y;
+                        // 주기 보정 (-PI ~ PI)
+                        diff = Math.atan2(Math.sin(diff), Math.cos(diff));
+                        group.rotation.y += diff * 0.15;
+                    }
+
+                    // 3. AMR 기기 전용 상단 LiDAR 정속 회전 연출
+                    if (meshInfo.type === 'AMR' && meshInfo.lidarMesh && !emergencyMode) {
+                        meshInfo.lidarMesh.rotation.y += 0.15;
+                    }
+                }
+            }
+
+            renderer.render(scene, camera);
+        }
+
+        // 3D 이닛 후 바로 애니메이션 루프 구동 시작
+        window.onload = function() {
+            init3D();
+            animate();
+        }
+
+        // 실시간 무작위 시뮬레이션 인터벌 (백데이터 업데이트)
         setInterval(() => {
-            if (emergencyMode) return; // 비상 정지 상태 시 이동 보류
+            if (emergencyMode) return; // 비상 정지 상태 시 시뮬레이션 올스톱
 
             // AGV-01 (도크 부근 완속 제어 충전 중)
             if (Math.random() > 0.5) {
@@ -490,9 +739,9 @@
                 if (batt01) batt01.innerText = devices['AGV-01'].battery + '%';
             }
 
-            // AGV-02 (고유 루트 자율 궤도 이동 시뮬레이션)
-            devices['AGV-02'].x = parseFloat((devices['AGV-02'].x + (Math.random() * 4 - 2)).toFixed(1));
-            devices['AGV-02'].y = parseFloat((devices['AGV-02'].y + (Math.random() * 4 - 2)).toFixed(1));
+            // AGV-02 (자재 이송 시뮬레이터 배회 및 무작위 주행)
+            devices['AGV-02'].x = parseFloat((devices['AGV-02'].x + (Math.random() * 8 - 4)).toFixed(1));
+            devices['AGV-02'].y = parseFloat((devices['AGV-02'].y + (Math.random() * 8 - 4)).toFixed(1));
             devices['AGV-02'].x = Math.max(15, Math.min(85, devices['AGV-02'].x));
             devices['AGV-02'].y = Math.max(15, Math.min(85, devices['AGV-02'].y));
             document.getElementById('x-agv-02').innerText = devices['AGV-02'].x;
@@ -502,10 +751,10 @@
                 document.getElementById('batt-agv-02').innerText = devices['AGV-02'].battery + '%';
             }
 
-            // AGV-03 (활성화 상태 일때만 자율 이동 및 배터리 소모)
+            // AGV-03 (활성화 상태 일때만 기동 지시)
             if (isAgv03Active) {
-                devices['AGV-03'].x = parseFloat((devices['AGV-03'].x + (Math.random() * 6 - 3)).toFixed(1));
-                devices['AGV-03'].y = parseFloat((devices['AGV-03'].y + (Math.random() * 6 - 3)).toFixed(1));
+                devices['AGV-03'].x = parseFloat((devices['AGV-03'].x + (Math.random() * 10 - 5)).toFixed(1));
+                devices['AGV-03'].y = parseFloat((devices['AGV-03'].y + (Math.random() * 10 - 5)).toFixed(1));
                 devices['AGV-03'].x = Math.max(15, Math.min(85, devices['AGV-03'].x));
                 devices['AGV-03'].y = Math.max(15, Math.min(85, devices['AGV-03'].y));
                 document.getElementById('x-agv-03').innerText = devices['AGV-03'].x;
@@ -516,26 +765,25 @@
                 }
             }
 
-            // AMR-01 (자율 모바일 로봇 무작위 회피 이동 경로 갱신)
-            devices['AMR-01'].x = parseFloat((devices['AMR-01'].x + (Math.random() * 6 - 3)).toFixed(1));
-            devices['AMR-01'].y = parseFloat((devices['AMR-01'].y + (Math.random() * 6 - 3)).toFixed(1));
+            // AMR-01 (자율 모바일 라이다 회피 시뮬레이션)
+            devices['AMR-01'].x = parseFloat((devices['AMR-01'].x + (Math.random() * 12 - 6)).toFixed(1));
+            devices['AMR-01'].y = parseFloat((devices['AMR-01'].y + (Math.random() * 12 - 6)).toFixed(1));
             devices['AMR-01'].x = Math.max(10, Math.min(90, devices['AMR-01'].x));
             devices['AMR-01'].y = Math.max(10, Math.min(90, devices['AMR-01'].y));
             document.getElementById('x-amr-01').innerText = devices['AMR-01'].x;
             document.getElementById('y-amr-01').innerText = devices['AMR-01'].y;
 
-            // AMR-02 (배터리 수준에 따른 가동 특성 분기 시뮬레이션)
+            // AMR-02 (배터리 부족에 의거한 모션 연출 대기)
             if (devices['AMR-02'].battery < 20) {
-                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 1 - 0.5)).toFixed(1));
-                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 1 - 0.5)).toFixed(1));
+                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 2 - 1)).toFixed(1));
+                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 2 - 1)).toFixed(1));
             } else {
-                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 4 - 2)).toFixed(1));
-                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 4 - 2)).toFixed(1));
+                devices['AMR-02'].x = parseFloat((devices['AMR-02'].x + (Math.random() * 8 - 4)).toFixed(1));
+                devices['AMR-02'].y = parseFloat((devices['AMR-02'].y + (Math.random() * 8 - 4)).toFixed(1));
             }
             document.getElementById('x-amr-02').innerText = devices['AMR-02'].x;
             document.getElementById('y-amr-02').innerText = devices['AMR-02'].y;
 
-            updateMapPositions();
         }, 1500);
 
         // 중앙 관제 콘솔에 로그 메시지 출력 모듈
@@ -595,30 +843,34 @@
                 document.getElementById('badge-agv-02').className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-slate-100 text-slate-800 dark:bg-slate-700 dark:text-slate-200";
             }
             if (deviceId === 'AMR-01') {
-                addLog('AMR-01', '라이다 센서 기반 주행 경로 실시간 재스캔 성공.', 'success');
+                addLog('AMR-01', '라이다 센서 기반 주행 경로 실시간 3D 스캐닝 작동 완료.', 'success');
             }
         }
 
-        // ABCS 전용 모듈 연동 충전 유도 기능
+        // ABCS 전용 모듈 연동 충전 유도 기능 (AMR-02 연동)
         function sendToCharge(deviceId) {
             if (emergencyMode) {
                 showToast('🚨 비상정지 모드 상태에서는 기기 이동이 불가능합니다.', true);
                 return;
             }
             addLog('FMS-MGR', `${deviceId}를 ABCS-01(자동충전기)로 자동 도킹 연동 지시`, 'info');
-            showToast('충전 스테이션 배정 및 경로 추적을 시작합니다.');
+            showToast('충전 스테이션 배정 및 3D 경로 추적을 시작합니다.');
 
+            // AMR-02를 ABCS-01 위치(x:10, y:80)로 타겟 변경 유도
             devices['AMR-02'].x = 10;
             devices['AMR-02'].y = 80;
             devices['AMR-02'].battery = 45;
 
-            document.getElementById('desc-amr-02').innerText = "상태: ABCS-01 자동 충전 및 도킹 성공";
+            document.getElementById('desc-amr-02').innerText = "상태: ABCS-01 자동 충전 및 도킹 완료";
             document.getElementById('badge-amr-02').innerText = "충전 진행";
             document.getElementById('badge-amr-02').className = "text-[10px] px-2 py-0.5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300";
             document.getElementById('batt-amr-02').innerText = '45%';
             document.getElementById('batt-amr-02').className = 'text-emerald-500';
 
-            updateMapPositions();
+            // 3D 궤도상에서 해당 기기의 바디 컬러를 일시적으로 리셋팅
+            if (vehicleMeshes['AMR-02']) {
+                vehicleMeshes['AMR-02'].bodyMesh.material.color.setHex(0x10b981); // 녹색 충전완료로 변경
+            }
         }
 
         // AGV-03 설비 상태 온/오프 가동 연동
@@ -632,8 +884,6 @@
             const badge = document.getElementById('badge-agv-03');
             const desc = document.getElementById('desc-agv-03');
             const icon = document.getElementById('icon-agv-03');
-            const body = document.getElementById('agv-03-body');
-            const label = document.getElementById('agv-03-label');
 
             if (!isAgv03Active) {
                 isAgv03Active = true;
@@ -647,13 +897,15 @@
                 
                 icon.className = "p-1.5 bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 rounded-md mt-0.5";
                 icon.innerHTML = '<i data-lucide="truck" class="w-4 h-4"></i>';
-                
-                body.className = "w-9 h-9 rounded-full bg-blue-500 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800";
-                label.className = "mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-blue-600 text-white rounded shadow";
+
+                // 3D 메쉬의 색상을 온블루로 리액티브 활성화 변경
+                if (vehicleMeshes['AGV-03']) {
+                    vehicleMeshes['AGV-03'].bodyMesh.material.color.setHex(0x3b82f6);
+                }
 
                 document.getElementById('stat-agv').innerText = "3 / 3 대";
 
-                addLog('AGV-03', 'FMS 시스템 핸드셰이크 성공. 무선 노드 정상 활성화', 'success');
+                addLog('AGV-03', '3D 무선 안테나 연결 성공. FMS 핸드셰이크 성공', 'success');
                 showToast('AGV-03호기를 자율 운행 풀에 편입했습니다.');
             } else {
                 isAgv03Active = false;
@@ -667,13 +919,15 @@
                 
                 icon.className = "p-1.5 bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-md mt-0.5";
                 icon.innerHTML = '<i data-lucide="truck-off" class="w-4 h-4"></i>';
-                
-                body.className = "w-9 h-9 rounded-full bg-slate-400 text-white flex items-center justify-center shadow-lg border-2 border-white dark:border-slate-800";
-                label.className = "mt-1 px-1.5 py-0.5 text-[10px] font-bold bg-slate-600 text-white rounded shadow";
+
+                // 3D 메쉬의 색상을 오프라인 슬레이트 컬러로 변환
+                if (vehicleMeshes['AGV-03']) {
+                    vehicleMeshes['AGV-03'].bodyMesh.material.color.setHex(0x64748b);
+                }
 
                 document.getElementById('stat-agv').innerText = "2 / 3 대";
 
-                addLog('AGV-03', '호스트 명령에 의한 기기 임시 휴면 상태 진입', 'info');
+                addLog('AGV-03', 'FMS 제어부 지령에 따른 기기 대기전력 수동정지 진입', 'info');
                 showToast('AGV-03호기 자율 운행을 일시정지하고 대기 상태로 변경했습니다.');
             }
             lucide.createIcons();
