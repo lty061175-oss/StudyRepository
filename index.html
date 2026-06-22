@@ -142,7 +142,7 @@
                 </div>
                 
                 <!-- 3D 렌더링 컨테이너 -->
-                <div class="p-1 flex-1 min-h-[500px] relative bg-slate-950" id="map-container">
+                <div class="p-1 flex-1 min-h-[500px] relative bg-white dark:bg-slate-900" id="map-container">
                     <div id="three-canvas-container" class="w-full h-full min-h-[500px] rounded-xl overflow-hidden"></div>
                 </div>
             </div>
@@ -427,7 +427,7 @@
 
             // 1. Scene 생성
             scene = new THREE.Scene();
-            scene.background = isDarkMode ? new THREE.Color(0x0f172a) : new THREE.Color(0xf1f5f9);
+            scene.background = isDarkMode ? new THREE.Color(0x0f172a) : new THREE.Color(0xffffff);
 
             // 2. Camera 생성
             camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
@@ -637,7 +637,7 @@
                 dirLight.intensity = 0.5;
                 floorGrid.material.color.setHex(0x334155);
             } else {
-                scene.background = new THREE.Color(0xf1f5f9);
+                scene.background = new THREE.Color(0xffffff);
                 hemiLight.color.setHex(0xffffff);
                 hemiLight.groundColor.setHex(0x444444);
                 hemiLight.intensity = 0.7;
