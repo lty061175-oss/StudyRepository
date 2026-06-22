@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 
 # GAS 웹 앱 배포 URL을 여기에 입력하세요
-GAS_URL = "https://script.google.com/macros/s/1tzs_QgY7KMToYofI1KtxJC6vtok5fIejlIcEL1Ry23A/exec"
+GAS_URL = "https://script.google.com/macros/s/oyings@seoultoilet-238904.iam.gserviceaccount.com/exec"
 
 st.set_page_config(page_title="팀 예산 관리 시스템", layout="wide")
 
