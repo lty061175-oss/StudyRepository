@@ -14,7 +14,7 @@ def get_gsheet():
     # 실제 환경에서는 서비스 계정 키 파일 경로를 설정하세요
     creds = ServiceAccountCredentials.from_json_keyfile_name('service_account.json', scope)
     client = gspread.authorize(creds)
-    return client.open("팀예산관리").sheet1
+    return client.open("팀예산관리").worksheet("시트1")
 
 # UI 구성
 st.title("📊 팀 예산 관리 시스템")
