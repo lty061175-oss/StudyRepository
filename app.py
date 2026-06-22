@@ -8,7 +8,7 @@ st.set_page_config(page_title="팀 예산 관리 시스템", layout="wide")
 
 def get_gsheet():
     try:
-        creds_dict = json.loads(st.secrets["GCP_SERVICE_ACCOUNT"])
+        creds_dict = json.loads(st.secrets["secrets"])
         scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
                  "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
         creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
