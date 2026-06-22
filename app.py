@@ -9,7 +9,7 @@ st.set_page_config(page_title="팀 예산 관리 시스템", layout="wide")
 @st.cache_resource
 def get_sheet():
     """Secrets에서 인증 정보를 가져와 구글 시트 객체를 반환합니다."""
-    secrets = st.secrets["gcp_service_account"]
+    secrets = st.secrets["connections.gsheets"]
     client = gspread.service_account_from_dict(dict(secrets))
     # 시트 이름이 '예산데이터시트'인지 확인하세요.
     sheet = client.open("예산데이터시트").sheet1
